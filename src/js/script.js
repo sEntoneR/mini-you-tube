@@ -2,6 +2,7 @@ const switcher = document.querySelector('#cbx'),
       more = document.querySelector('.more'),
       modal = document.querySelector('.modal'),
       videos = document.querySelectorAll('.videos__item');
+      const videosWrapper = document.querySelector('.videos__wrapper');
 let player;
 
 function bindSlideToggle(trigger, boxBody, content, openClass) {
@@ -69,16 +70,16 @@ let night = false;
 switcher.addEventListener('change', () => {
     switchMode();
 });
-const data = [ 
+/*const data = [ 
     ['img/thumb_3.webp', 'img/thumb_4.webp', 'img/thumb_5.webp'],
     ['#3 Верстка на flexbox CSS | Блок преимущества и галерея | Марафон верстки | Артем Исламов',
      '#2 Установка spikmi и работа с ветками на Github | Марафон вёрстки Урок 2',
      '#1 Верстка реального заказа landing Page | Марафон вёрстки | Артём Исламов'],
     ['3,6 тыс. просмотров', '4,2 тыс. просмотров', '28 тыс. просмотров'],
     ['X9SmcY3lM-U', '7BvHoh0BrMw', 'mC8JW_aG2EM'] 
- ];
+ ];*/
 
- more.addEventListener('click', () => {
+/* more.addEventListener('click', () => {
      const videosWrapper = document.querySelector('.videos__wrapper');
      more.remove();
 
@@ -99,11 +100,119 @@ const data = [
         setTimeout( () => {
              card.classList.remove('videos__item-active')
         }, 10);
+        if(night === true){
+            card.querySelector('videos__item-descr').style.color='#fff';
+            card.querySelector('videos__item-views').style.color='#fff';
+        }
         bindNewModal(card);
      }
 
      sliceTitle('.videos__item-descr', 100);     
  });
+ */
+
+
+function start(){
+    gapi.client.init({
+        'apiKey': 'AIzaSyChs1E2MH5drbU_weOjpqsmuWG55ibKs04',
+        'discoveryDocs': ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"]
+    }).then(function() {
+        return gapi.client.youtube.playlistItems.list({
+           "part": "snippet,contentDetails",
+           "maxResults": '6',
+           "playlistId": "PL3LQJkGQtzc4gsrFkm4MjWhTXhopsMgpv" 
+        });
+    }).then(function(response){
+        console.log(response.result);
+        const videosWrapper = document.querySelector('.videos__wrapper');
+        
+        response.result.items.forEach(item => {
+            let card = document.createElement('a');
+
+            card.classList.add('videos__item', 'videos__item-active');
+            card.setAttribute('data-url', item.contentDetails.videoId);
+
+            card.innerHTML = `
+               <img src="${item.snippet.thumbnails.high.url}" alt="thumb">
+                   <div class="videos__item-descr">
+                        ${item.snippet.title}
+                   </div>
+                   <div class="videos__item-views">
+                        2.7 тыс просмотров
+                   </div>
+            `;
+            videosWrapper.appendChild(card);
+           setTimeout( () => {
+                card.classList.remove('videos__item-active')
+           }, 10);
+           if(night === true){
+               card.querySelector('.videos__item-descr').style.color='#fff';
+               card.querySelector('.videos__item-views').style.color='#fff';
+           }
+        });
+        sliceTitle('.videos__item-descr', 100);
+        bindModal(document.querySelectorAll('.videos__item'));
+    });
+}
+
+
+more.addEventListener('click', () => {
+    more.remove();
+    gapi.load('client', start);
+});
+
+function search(target) {
+    gapi.client.init({
+        'apiKey': 'AIzaSyChs1E2MH5drbU_weOjpqsmuWG55ibKs04',
+        'discoveryDocs': ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"]
+    }).then(function(){
+        return gapi.client.youtube.search.list({
+            'maxResults': '10',
+            'part': 'snippet',
+            'q': `${target}`,
+            'type': ''
+        });
+    }).then(function(response){
+            console.log(response.result);
+           // videosWrapper.innerHTML = '';
+            while(videosWrapper.firstChild){
+                videosWrapper.removeChild(videosWrapper.firstChild);
+            }
+            response.result.items.forEach(item => {
+                let card = document.createElement('a');
+    
+                card.classList.add('videos__item', 'videos__item-active');
+                card.setAttribute('data-url', item.id.videoId);
+    
+                card.innerHTML = `
+                   <img src="${item.snippet.thumbnails.high.url}" alt="thumb">
+                       <div class="videos__item-descr">
+                            ${item.snippet.title}
+                       </div>
+                       <div class="videos__item-views">
+                            2.7 тыс просмотров
+                       </div>
+                `;
+                videosWrapper.appendChild(card);
+               setTimeout( () => {
+                    card.classList.remove('videos__item-active')
+               }, 10);
+               if(night === true){
+                   card.querySelector('.videos__item-descr').style.color='#fff';
+                   card.querySelector('.videos__item-views').style.color='#fff';
+               }
+            });
+            sliceTitle('.videos__item-descr', 100);
+            bindModal(document.querySelectorAll('.videos__item'));
+    });
+}
+
+document.querySelector('.search').addEventListener('submit', (e) => {
+    e.preventDefault();
+    gapi.load('client',() => {search(document.querySelector('.search > input').value)});
+    document.querySelector('.search > input').value = '';
+});
+
 
  function sliceTitle(selector, count) {
      document.querySelectorAll(selector).forEach(item => {
